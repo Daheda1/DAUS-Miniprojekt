@@ -37,8 +37,8 @@ def split_data(source_dir, train_dir, test_dir, test_size=0.2):
 
 # Stier til mapperne
 data_dir = 'Data/KD hele plader'
-train_dir = 'Data/KD Train plader'
-test_dir = 'Data/KD Test plader'
+train_dir = 'Data/KD train plader'
+test_dir = 'Data/KD test plader'
 
 # Kald funktionen
 split_data(data_dir, train_dir, test_dir)
