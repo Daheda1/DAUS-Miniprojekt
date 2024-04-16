@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Indlæs billedet
-image_path = 'Data/KD test plader/22.jpg' # Erstat med stien til dit billede
+image_path = 'Data/KD test plader/3.jpg' # Erstat med stien til dit billede
 image = cv2.imread(image_path)
 
 # Konverter til gråskala

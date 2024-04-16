@@ -1,20 +1,19 @@
-import cv2
+import cv2 as cv
 import numpy as np
+from matplotlib import pyplot as plt
+ 
+img_rgb = cv.imread('1.jpg')
+assert img_rgb is not None, "file could not be read, check with os.path.exists()"
 
-# Indlæs billeder
-img = cv2.imread('5.jpg', 0)  # Billedet, der skal søges i
-template = cv2.imread('Krone.png', 0)  # Template-billede af en kongekrone
+img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
+template = cv.imread('Templates/templateSwamp.png', cv.IMREAD_GRAYSCALE)
+assert template is not None, "file could not be read, check with os.path.exists()"
 w, h = template.shape[::-1]
-
-# Template matching
-res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
-threshold = 0.8  # Tærskelværdien for at bestemme en match
-locations = np.where(res >= threshold)
-
-# For hvert match, tegn en rektangel
-for pt in zip(*locations[::-1]):
-    cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
-
-cv2.imshow('Detected', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+ 
+res = cv.matchTemplate(img_gray,template,cv.TM_CCOEFF_NORMED)
+threshold = 0.8
+loc = np.where( res >= threshold)
+for pt in zip(*loc[::-1]):
+    cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+ 
+cv.imwrite('res.png',img_rgb)
