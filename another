@@ -3,15 +3,14 @@ import numpy as np
 import os
 import numpy as np
 
-def crown_detect(img_rgb, threshold):
+def crown_detect(img_rgb, threshold, template_path):
     boxes = []
 
     assert img_rgb is not None, "file could not be read, check with os.path.exists()"
     img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
-
-    for path, folders, templates in os.walk(r"D:\DAKI\semester_2\king_domino\github\DAUS-Miniprojekt\Templates"):
+    for path, folders, templates in os.walk(template_path):
         for template in templates:
-            actual_file = r"Templates" + "\\" + template
+            actual_file = template_path + "\\" + template
             current_template = cv.imread(actual_file, cv.IMREAD_GRAYSCALE)
             assert current_template is not None, "file could not be read, check with os.path.exists()"
             w, h = current_template.shape[::-1]
@@ -68,10 +67,11 @@ def intersection_over_union(loc, w, h, boxes, img_rgb):
                 cv.rectangle(img_rgb, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
     return boxes
 
-img_rgb = cv.imread(r'Data\KD train tiles\Mine\6.jpg_3_0.png') #Data\KD Train plader\15.jpg Data\KD Train plader\57.jpg Data\KD Train plader\6.jpg
-threshold = 0.8
+img_rgb = cv.imread(r'Data\KD Train plader\57.jpg') #Data\KD Train plader\15.jpg Data\KD Train plader\57.jpg Data\KD Train plader\6.jpg
+threshold = 0.78
+template_path = r"Templates"
 
-boxes = crown_detect(img_rgb, threshold)
+boxes = crown_detect(img_rgb, threshold, template_path)
 
 print(len(boxes))
 cv.imwrite('res.jpg',img_rgb)
