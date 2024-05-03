@@ -4,9 +4,73 @@ from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
+import os
 
-def crown_detect(tile):
-    return 1
+def crown_detect(img_rgb, threshold, template_path):
+    boxes = []
+
+    assert img_rgb is not None, "file could not be read, check with os.path.exists()"
+    img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
+
+    for path, folders, templates in os.walk(template_path):
+        for template in templates:
+            actual_file = template_path + "/" + template
+            current_template = cv.imread(actual_file, cv.IMREAD_GRAYSCALE)
+            assert current_template is not None, "file could not be read, check with os.path.exists()"
+            w, h = current_template.shape[::-1]
+
+            for rotation in range(4):
+                temp = np.rot90(current_template, rotation)
+                res = cv.matchTemplate(img_gray, temp, cv.TM_CCOEFF_NORMED)
+                loc = np.where(res >= threshold)
+
+                intersection_over_union(loc, w, h, boxes, img_rgb)
+            
+    return len(boxes)
+
+
+def intersection_over_union(loc, w, h, boxes, img_rgb):
+
+    for pts in zip(*loc[::-1]): 
+        unions = []
+
+        #Get the full box
+        new_box = [pts[0], pts[1], pts[0] + w, pts[1] + h]
+
+        if boxes == []:
+            boxes.append(new_box)
+            cv.rectangle(img_rgb, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
+
+        else:
+            for box in boxes:
+                # determine the (x, y)-coordinates of the intersection rectangle
+                xA = max(box[0], new_box[0])
+                yA = max(box[1], new_box[1])
+                xB = min(box[2], new_box[2])
+                yB = min(box[3], new_box[3])
+
+                # compute the area of intersection rectangle
+                #interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+               # print(interArea)
+                interArea = (xB - xA) * (yB - yA)
+             #   print(interArea)
+
+                # compute the area of both the prediction and ground-truth
+                # rectangles
+                boxAArea = (box[2] - box[0]) * (box[3] - box[1])
+                boxBArea = (new_box[2] - new_box[0]) * (new_box[3] - new_box[1])
+
+                # compute the intersection over union by taking the intersection
+                # area and dividing it by the sum of prediction + ground-truth
+                # areas - the interesection area
+                iou = interArea / float(boxAArea + boxBArea - interArea)
+                unions.append(iou)
+
+            if all(i < 0.2 for i in unions):
+                boxes.append(new_box)
+                cv.rectangle(img_rgb, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
+    return boxes
+
 
 
 def zoom_tile(tile, crop_percentage=1):
@@ -102,7 +166,7 @@ def matrix_create(imgpath):
         terrain_row = []
 
         for y in range(5):
-            crown_row.append(crown_detect(picturematrix[x][y]))
+            crown_row.append(crown_detect(picturematrix[x][y], 0.8, "Templates"))
             terrain_row.append(get_terrain(picturematrix[x][y]))
 
         crownmatrix.append(crown_row)
@@ -125,7 +189,7 @@ def show_score(crownmatrix, terrainmatrix, picturematrix):
 
 
 def main():
-    imgpath = "Data/KD train plader/1.jpg"
+    imgpath = "Data/KD train plader/57.jpg"
     crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
     score = calculate_score(crownmatrix, terrainmatrix)
     print(score)
