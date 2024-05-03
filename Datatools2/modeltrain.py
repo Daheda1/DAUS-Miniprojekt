@@ -137,7 +137,7 @@ def train_knn(features_dict, n_neighbors=3):
     all_labels = np.array(all_labels)
 
     # Opdel data i et trænings- og testsæt
-    X_train, X_test, y_train, y_test = train_test_split(all_features, all_labels, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(all_features, all_labels, test_size=0.2, random_state=40)
 
     # Initialiser kNN klassifikatoren
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
