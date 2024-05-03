@@ -8,22 +8,23 @@ import os
 
 def crown_detect(img_rgb, threshold, template_path):
     boxes = []
-
-    assert img_rgb is not None, "file could not be read, check with os.path.exists()"
+    assert img_rgb is not None, "No picture"
     img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
 
     for path, folders, templates in os.walk(template_path):
         for template in templates:
-            actual_file = template_path + "/" + template
-            current_template = cv.imread(actual_file, cv.IMREAD_GRAYSCALE)
-            assert current_template is not None, "file could not be read, check with os.path.exists()"
-            w, h = current_template.shape[::-1]
+            actual_file = os.path.join(template_path, template)
+            if not os.path.exists(actual_file):
+                raise AssertionError(f"File {actual_file} does not exist.")
 
+            current_template = cv.imread(actual_file, cv.IMREAD_GRAYSCALE)
+            assert current_template is not None, f"Failed to read file {actual_file}"
+
+            w, h = current_template.shape[::-1]
             for rotation in range(4):
                 temp = np.rot90(current_template, rotation)
                 res = cv.matchTemplate(img_gray, temp, cv.TM_CCOEFF_NORMED)
                 loc = np.where(res >= threshold)
-
                 intersection_over_union(loc, w, h, boxes, img_rgb)
             
     return len(boxes)
