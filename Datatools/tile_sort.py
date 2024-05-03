@@ -15,11 +15,11 @@ df['Cluster'] = kmeans.labels_
 # 3. Opret mapper og kopier filer
 source_dir = 'Data/KD train tiles/blandet'
 for i in range(7):
-    os.makedirs(f'category {i}', exist_ok=True)
+    os.makedirs(f'Data/KD train tiles/category {i}', exist_ok=True)
 
 for index, row in df.iterrows():
     file_path = os.path.join(source_dir, row['Filename'])
-    destination_dir = f'category {row["Cluster"]}'
+    destination_dir = f'Data/KD train tiles/category {row["Cluster"]}'
     shutil.copy(file_path, destination_dir)
 
 print("Filer er blevet fordelt i kategorimapper baseret på clustering.")

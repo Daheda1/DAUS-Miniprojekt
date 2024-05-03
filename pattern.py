@@ -1,19 +1,57 @@
 import cv2 as cv
 import numpy as np
-from matplotlib import pyplot as plt
- 
-img_rgb = cv.imread('1.jpg')
-assert img_rgb is not None, "file could not be read, check with os.path.exists()"
+import os
 
-img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
-template = cv.imread('Templates/templateSwamp.png', cv.IMREAD_GRAYSCALE)
-assert template is not None, "file could not be read, check with os.path.exists()"
-w, h = template.shape[::-1]
- 
-res = cv.matchTemplate(img_gray,template,cv.TM_CCOEFF_NORMED)
-threshold = 0.8
-loc = np.where( res >= threshold)
-for pt in zip(*loc[::-1]):
-    cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
- 
-cv.imwrite('res.png',img_rgb)
+def get_tiles(image):
+    tiles = []
+    for y in range(5):
+        tiles.append([])
+        for x in range(5):
+            tiles[-1].append(image[y*100:(y+1)*100, x*100:(x+1)*100])
+    return tiles
+
+def load_patterns(pattern_folder):
+    patterns = []
+    for filename in os.listdir(pattern_folder):
+        path = os.path.join(pattern_folder, filename)
+        pattern = cv.imread(path, cv.IMREAD_GRAYSCALE)
+        if pattern is not None:
+            patterns.append(pattern)
+    return patterns
+
+def find_best_matching_tile(image_path, pattern_folder):
+    # Indlæs billedet
+    image = cv.imread(image_path, cv.IMREAD_GRAYSCALE)
+    if image is None:
+        return "Billedet kunne ikke indlæses."
+
+    # Opdel billedet i tiles
+    tiles = get_tiles(image)
+
+    # Indlæs patterns
+    patterns = load_patterns(pattern_folder)
+
+    # Initialiser variabler til at finde det bedste match
+    best_match_score = float('inf')
+    best_match_position = (-1, -1)
+
+    # Sammenlign hver tile med hvert pattern
+    for y, row in enumerate(tiles):
+        for x, tile in enumerate(row):
+            for pattern in patterns:
+                # Anvend matchTemplate og find det bedste match
+                res = cv.matchTemplate(tile, pattern, cv.TM_SQDIFF)
+                min_val, max_val, min_loc, max_loc = cv.minMaxLoc(res)
+                
+                # Opdater det bedste match
+                if min_val < best_match_score:
+                    best_match_score = min_val
+                    best_match_position = (x, y)
+
+    return best_match_position
+
+# Brug funktionen
+image_path = 'sti_til_dit_billede'
+pattern_folder = 'sti_til_dine_mønstre'
+match_position = find_best_matching_tile(image_path, pattern_folder)
+print(f"Bedste matchende tile er i position: {match_position}")
