@@ -10,6 +10,9 @@ def main():
 
     # vi kigger igennem hver fil i input folderen
     for filename in os.listdir(input_folder):
+        
+        if not filename.endswith('.jpg'):
+            continue
         # da billederne er navngivet som 1.jpg, 2.jpg osv. 
         # bruger vi filename counteren til at definere billedet vi vil have
         image_path = input_folder +"/" +filename
@@ -26,9 +29,9 @@ def main():
         print(len(tiles))
         for y, row in enumerate(tiles):
             for x, tile in enumerate(row):
-                zoomed_tile = zoom_tile(tile)
-                ready_tile = remove_circle_from_tile(zoomed_tile)
-                save_tile(ready_tile, output_folder, filename, x, y)
+                tile = zoom_tile(tile)
+                #tile = remove_circle_from_tile(tile)
+                save_tile(tile, output_folder, filename, x, y)
 
 # her definerer vi en funktion 'save_tile' med inputparametrene tile, outputfolder, image_name, x og y
 def save_tile(tile, output_folder, image_name, x, y):
