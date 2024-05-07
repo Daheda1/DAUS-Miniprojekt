@@ -3,40 +3,33 @@ import numpy as np
 import os
 import numpy as np
 
-def crown_detect(img_rgb, threshold, template_path):
+def crown_detect(img_bgr, template_path, threshold, iou_thres):
     boxes = []
+    assert img_bgr is not None, "file could not be read, check with os.path.exists()"
+ 
+    for template in template_path:
+        #   print(template)
+        actual_temp = os.path.join(r"Templates", template)
+        current_template = cv.imread(actual_temp)
+        assert current_template is not None, "file could not be read, check with os.path.exists()"
 
-    assert img_rgb is not None, "file could not be read, check with os.path.exists()"
-    img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
-    for path, folders, templates in os.walk(template_path):
-        for template in templates:
-            actual_file = template_path + "\\" + template
-            current_template = cv.imread(actual_file, cv.IMREAD_GRAYSCALE)
-            assert current_template is not None, "file could not be read, check with os.path.exists()"
-            w, h = current_template.shape[::-1]
+        for rotation in range(4):
+            temp = np.rot90(current_template, rotation)
+            h, w, _ = temp.shape
+            res = cv.matchTemplate(img_bgr, temp, cv.TM_CCOEFF_NORMED)
+            loc = np.where(res >= threshold)
 
-            for rotation in range(4):
-                temp = np.rot90(current_template, rotation)
-                res = cv.matchTemplate(img_gray, temp, cv.TM_CCOEFF_NORMED)
-                loc = np.where(res >= threshold)
+            intersection_over_union(loc, h, 3, boxes, img_bgr, iou_thres)
+    return len(boxes)
 
-                intersection_over_union(loc, w, h, boxes, img_rgb)
-            
-    return boxes
-
-
-def intersection_over_union(loc, w, h, boxes, img_rgb):
-
+def intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres):
     for pts in zip(*loc[::-1]): 
         unions = []
-
-        #Get the full box
         new_box = [pts[0], pts[1], pts[0] + w, pts[1] + h]
 
         if boxes == []:
             boxes.append(new_box)
-            cv.rectangle(img_rgb, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
-
+            cv.rectangle(img_bgr, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
         else:
             for box in boxes:
                 # determine the (x, y)-coordinates of the intersection rectangle
@@ -46,10 +39,7 @@ def intersection_over_union(loc, w, h, boxes, img_rgb):
                 yB = min(box[3], new_box[3])
 
                 # compute the area of intersection rectangle
-                #interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
-               # print(interArea)
                 interArea = (xB - xA) * (yB - yA)
-             #   print(interArea)
 
                 # compute the area of both the prediction and ground-truth
                 # rectangles
@@ -59,19 +49,27 @@ def intersection_over_union(loc, w, h, boxes, img_rgb):
                 # compute the intersection over union by taking the intersection
                 # area and dividing it by the sum of prediction + ground-truth
                 # areas - the interesection area
-                iou = interArea / float(boxAArea + boxBArea - interArea)
+                if interArea == 0 or float(boxAArea + boxBArea - interArea) == 0:
+                    iou = 0
+                else:
+                    iou = interArea / float(boxAArea + boxBArea - interArea)
                 unions.append(iou)
 
-            if all(i < 0.2 for i in unions):
+            if all(i < iou_thres for i in unions):
                 boxes.append(new_box)
-                cv.rectangle(img_rgb, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
+                cv.rectangle(img_bgr, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
     return boxes
 
-img_rgb = cv.imread(r'Data\KD Train plader\57.jpg') #Data\KD Train plader\15.jpg Data\KD Train plader\57.jpg Data\KD Train plader\6.jpg
-threshold = 0.78
-template_path = r"Templates"
+def another():
+    img_bgr = cv.imread(r'Data\KD Train plader\4.jpg') #Data\KD Train plader\15.jpg Data\KD Train plader\57.jpg Data\KD Train plader\6.jpg 4
+    template_path = os.listdir(r"Templates")
+    threshold = 0.75
+    iou_thres = 0.2
 
-boxes = crown_detect(img_rgb, threshold, template_path)
+    boxes = crown_detect(img_bgr, template_path, threshold, iou_thres)
+    print(boxes)
+    cv.imwrite('res.jpg', img_bgr)
+    cv.imshow('res.jpg', img_bgr)
+    cv.waitKey(0)
 
-print(len(boxes))
-cv.imwrite('res.jpg',img_rgb)
+another()
