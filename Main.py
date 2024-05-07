@@ -62,7 +62,7 @@ def intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres):
 
 
 
-def zoom_tile(tile, crop_percentage=1):
+def zoom_tile(tile, crop_percentage=5):
     height, width = tile.shape[:2]
     crop_size = crop_percentage / 100.0
     start_x = int(width * crop_size / 2)
@@ -168,11 +168,11 @@ def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     fig, axes = plt.subplots(nrows=5, ncols=5, figsize=(10, 10))
     plt.suptitle(f"Score: {score}", fontsize=16)
 
-    for i in range(5):
-        for j in range(5):
-            ax = axes[i][j]
-            ax.imshow(cv.cvtColor(picturematrix[i][j], cv.COLOR_BGR2RGB))
-            label = f"{terrainmatrix[i][j]} {str(crownmatrix[i][j])}"
+    for x in range(5):
+        for y in range(5):
+            ax = axes[x][y]
+            ax.imshow(cv.cvtColor(picturematrix[x][y], cv.COLOR_BGR2RGB))
+            label = f"{terrainmatrix[x][y]} {str(crownmatrix[x][y])}"
             ax.set_title(label, fontsize=8)  # Display the crown number
             ax.axis('off')
     plt.tight_layout()

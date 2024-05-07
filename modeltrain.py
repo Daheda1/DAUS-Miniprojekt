@@ -52,9 +52,10 @@ def apply_transformations(images_dict):
         for image in images_list:
             try:
                 # Anvend zoom_tile funktionen
-                zoomed_image = zoom_tile(image, crop_percentage=10)  # eksempel: 10% cropping
+                zoomed_image = zoom_tile(image, crop_percentage=5)  # eksempel: 10% cropping
+
                 # Anvend remove_circle_from_tile funktionen
-                final_image = remove_circle_from_tile(zoomed_image, circle_size=0.3)  # eksempel: 30% cirkelstørrelse
+                final_image = remove_circle_from_tile(zoomed_image, circle_size=0.5)  # eksempel: 30% cirkelstørrelse
                 
                 transformed_images.append(final_image)
             except Exception as e:
@@ -102,14 +103,14 @@ def calculate_color_features(images_dict):
         
         for image in images_list:
             # Beregn gennemsnitlige og middel RGB værdier (som er det samme i dette tilfælde)
-            average_rgb = np.mean(image, axis=(0, 1))
+            average_bgr = np.mean(image, axis=(0, 1))
             
             # Konverter billede fra RGB til HSV
             hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
             average_hsv = np.mean(hsv_image, axis=(0, 1))
             
             # Flad features ud til en enkelt liste
-            flat_features = np.concatenate([average_rgb, average_hsv])
+            flat_features = np.concatenate([average_bgr, average_hsv])
             
             # Tilføj den fladede feature-liste til mappens features
             folder_features.append(flat_features)
