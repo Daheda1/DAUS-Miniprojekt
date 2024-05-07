@@ -176,8 +176,10 @@ def matrix_create(imgpath):
     return crownmatrix, terrainmatrix, picturematrix
 
 
-def show_score(crownmatrix, terrainmatrix, picturematrix):
+def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     fig, axes = plt.subplots(nrows=5, ncols=5, figsize=(10, 10))
+    plt.suptitle(f"Score: {score}", fontsize=16)
+
     for i in range(5):
         for j in range(5):
             ax = axes[i][j]
@@ -190,11 +192,11 @@ def show_score(crownmatrix, terrainmatrix, picturematrix):
 
 
 def main():
-    imgpath = "Data/KD train plader/57.jpg"
+    imgpath = "Data/KD train plader/1.jpg"
     crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
     score = calculate_score(crownmatrix, terrainmatrix)
     print(score)
-    show_score(crownmatrix, terrainmatrix, picturematrix)
+    show_score(crownmatrix, terrainmatrix, picturematrix, score)
 
 
 main()

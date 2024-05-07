@@ -35,6 +35,8 @@ def split_data(source_dir, train_dir, test_dir, test_size=0.2):
     except Exception as e:
         print(f"En uventet fejl opstod: {e}")
 
+
+
 # Stier til mapperne
 data_dir = 'Data/KD hele plader'
 train_dir = 'Data/KD train plader'
