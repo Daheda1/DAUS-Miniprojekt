@@ -153,14 +153,33 @@ def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     plt.show()
 
 
-def main():
-    imgpath = "Data/KD train plader/4.jpg"
-    crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
-    score = calculate_score(crownmatrix, terrainmatrix)
-    print(score)
-    show_score(crownmatrix, terrainmatrix, picturematrix, score)
+#def main():
+ #   imgpath = "Data/KD train plader/4.jpg"
+  #  crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
+   # score = calculate_score(crownmatrix, terrainmatrix)
+    #print(score)
+    #show_score(crownmatrix, terrainmatrix, picturematrix, score)
 
-    
+def calculate_dif_score(score, imgpath):
+    actual_score = {r"Data/KD Test plader\20.jpg": 52, r"Data/KD Test plader\21.jpg": 40, r"Data/KD Test plader\30.jpg": 48,
+                    r"Data/KD Test plader\39.jpg": 47, r"Data/KD Test plader\45.jpg": 38, r"Data/KD Test plader\46.jpg": 43,
+                    r"Data/KD Test plader\48.jpg": 42, r"Data/KD Test plader\49.jpg": 26, r"Data/KD Test plader\50.jpg": 34,
+                    r"Data/KD Test plader\55.jpg": 37, r"Data/KD Test plader\63.jpg": 38, r"Data/KD Test plader\65.jpg": 80,
+                    r"Data/KD Test plader\67.jpg": 99, r"Data/KD Test plader\70.jpg": 99}
+
+    dif_score = abs(actual_score[imgpath] - score)
+
+    return dif_score, actual_score[imgpath]
+
+def main():
+    imgpaths = r"Data/KD Test plader"
+    for imgpath in os.listdir(imgpaths):
+        imgpath = os.path.join(r"Data/KD Test plader", imgpath)
+        crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
+        score = calculate_score(crownmatrix, terrainmatrix)
+        dif_score, actual_score = calculate_dif_score(score, imgpath)
+        print(f"We predict that the final score is {score}, which is {dif_score} from the actual score of {actual_score}.")
+     #   show_score(crownmatrix, terrainmatrix, picturematrix, score)    
 
 
 main()
