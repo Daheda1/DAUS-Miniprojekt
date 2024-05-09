@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 import os
+from modeltrain import zoom_tile, remove_circle_from_tile, calculate_color_features
 
 def crown_detect(img_bgr, template_path, threshold = 0.75, iou_thres = 0.2):
     # The points of each found crown. The lenght of the list is the amount of crowns
@@ -61,45 +62,18 @@ def intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres):
     return boxes
 
 
-
-def zoom_tile(tile, crop_percentage=5):
-    height, width = tile.shape[:2]
-    crop_size = crop_percentage / 100.0
-    start_x = int(width * crop_size / 2)
-    start_y = int(height * crop_size / 2)
-    end_x = width - start_x
-    end_y = height - start_y
-    cropped_tile = tile[start_y:end_y, start_x:end_x]
-    zoomed_tile = cv.resize(cropped_tile, (width, height))
-    return zoomed_tile
-
-def remove_circle_from_tile(tile, circle_size=0.5):
-    height, width = tile.shape[:2]
-    center_x, center_y = width // 2, height // 2
-    radius = int(min(center_x, center_y) * circle_size)
-    mask = np.zeros((height, width), dtype=np.uint8)
-    cv.circle(mask, (center_x, center_y), radius, (255, 255, 255), -1)
-    circle_removed_tile = cv.bitwise_and(tile, tile, mask=cv.bitwise_not(mask))
-    return circle_removed_tile
-
-def calculate_color_features(image):
-    average_rgb = np.mean(image, axis=(0, 1))
-    hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-    average_hsv = np.mean(hsv_image, axis=(0, 1))
-    flat_features = np.concatenate([average_rgb, average_hsv])
-
-    return flat_features
-
 def tile_data_get(tile):
     tile = zoom_tile(tile)
     tile = remove_circle_from_tile(tile)
     tile = calculate_color_features(tile)
-    return tile
+    return tile.reshape(1, -1)
 
 def get_terrain(tile):
     model = joblib.load('knn_model_model.joblib')
+
     tile_color_data = tile_data_get(tile)
     tile_color_data = tile_color_data.reshape(1, -1)
+
     terrain = model.predict(tile_color_data)
 
     return terrain
@@ -180,11 +154,13 @@ def show_score(crownmatrix, terrainmatrix, picturematrix, score):
 
 
 def main():
-    imgpath = "Data/KD train plader/1.jpg"
+    imgpath = "Data/KD train plader/4.jpg"
     crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
     score = calculate_score(crownmatrix, terrainmatrix)
     print(score)
     show_score(crownmatrix, terrainmatrix, picturematrix, score)
+
+    
 
 
 main()

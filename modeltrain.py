@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
 
-
-
 def load_images_from_folders(root_folder):
     images_dict = {}
     
@@ -26,7 +24,7 @@ def load_images_from_folders(root_folder):
                 file_path = os.path.join(folder_path, filename)
                 
                 # Indlæs billedet hvis filen er et billede
-                if file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff')):
+                if file_path.lower().endswith(('.png')):
                     image = cv.imread(file_path)
                     if image is not None:
                         images_list.append(image)
@@ -34,13 +32,7 @@ def load_images_from_folders(root_folder):
             # Tilføj listen af billeder til ordbogen med mappenavnet som nøgle
             if images_list:
                 images_dict[folder_name] = images_list
-    
     return images_dict
-
-
-# Brug funktionen
-root_folder = 'Data/KD train tiles'
-images_dict = load_images_from_folders(root_folder)
 
 
 def apply_transformations(images_dict):
@@ -52,10 +44,10 @@ def apply_transformations(images_dict):
         for image in images_list:
             try:
                 # Anvend zoom_tile funktionen
-                zoomed_image = zoom_tile(image, crop_percentage=5)  # eksempel: 10% cropping
+                zoomed_image = zoom_tile(image)
 
                 # Anvend remove_circle_from_tile funktionen
-                final_image = remove_circle_from_tile(zoomed_image, circle_size=0.5)  # eksempel: 30% cirkelstørrelse
+                final_image = remove_circle_from_tile(zoomed_image)
                 
                 transformed_images.append(final_image)
             except Exception as e:
@@ -66,10 +58,7 @@ def apply_transformations(images_dict):
     
     return transformed_images_dict
 
-def zoom_tile(tile, crop_percentage=1):
-    if crop_percentage < 0 or crop_percentage > 100:
-        raise ValueError("crop_percentage must be between 0 and 100")
-    
+def zoom_tile(tile, crop_percentage=5):    
     height, width = tile.shape[:2]
     crop_size = crop_percentage / 100.0
     start_x = int(width * crop_size / 2)
@@ -81,9 +70,6 @@ def zoom_tile(tile, crop_percentage=1):
     return zoomed_tile
 
 def remove_circle_from_tile(tile, circle_size=0.5):
-    if circle_size <= 0 or circle_size > 1:
-        raise ValueError("circle_size must be between 0 and 1")
-
     height, width = tile.shape[:2]
     center_x, center_y = width // 2, height // 2
     radius = int(min(center_x, center_y) * circle_size)
@@ -92,36 +78,29 @@ def remove_circle_from_tile(tile, circle_size=0.5):
     circle_removed_tile = cv.bitwise_and(tile, tile, mask=cv.bitwise_not(mask))
     return circle_removed_tile
 
-# Brug funktionen
-transformed_dict = apply_transformations(images_dict)
+def calculate_color_features(image):
+    average_rgb = np.mean(image, axis=(0, 1))
+    hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+    average_hsv = np.mean(hsv_image, axis=(0, 1))
+    flat_features = np.concatenate([average_rgb, average_hsv])
 
-def calculate_color_features(images_dict):
+    return flat_features
+
+def calculate_color_features_dict(images_dict):
     features_dict = {}
     
     for folder_name, images_list in images_dict.items():
         folder_features = []
         
-        for image in images_list:
-            # Beregn gennemsnitlige og middel RGB værdier (som er det samme i dette tilfælde)
-            average_bgr = np.mean(image, axis=(0, 1))
-            
-            # Konverter billede fra RGB til HSV
-            hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-            average_hsv = np.mean(hsv_image, axis=(0, 1))
-            
-            # Flad features ud til en enkelt liste
-            flat_features = np.concatenate([average_bgr, average_hsv])
-            
+        for image in images_list:                        
             # Tilføj den fladede feature-liste til mappens features
-            folder_features.append(flat_features)
+            folder_features.append(calculate_color_features(image))
         
         if folder_features:
             features_dict[folder_name] = folder_features
     
     return features_dict
 
-# Brug funktionen
-color_features_dict = calculate_color_features(images_dict)
 
 def train_knn(features_dict, n_neighbors=3):
     # Saml alle features og labels
@@ -175,9 +154,16 @@ def test_knn(knn, X_test, y_test):
     plt.title('Confusion Matrix')
     plt.show()
 
-# Brug funktionerne
-knn_model, X_test, y_test = train_knn(color_features_dict)
-test_knn(knn_model, X_test, y_test)
 
-joblib.dump(knn_model, 'knn_model_model.joblib')
 
+if __name__ == "__main__":
+    root_folder = 'Data/KD train tiles'
+    images_dict = load_images_from_folders(root_folder)
+    print(images_dict)
+    transformed_dict = apply_transformations(images_dict)
+    color_features_dict = calculate_color_features_dict(images_dict)
+
+    knn_model, X_test, y_test = train_knn(color_features_dict, n_neighbors=13)
+    test_knn(knn_model, X_test, y_test)
+
+    joblib.dump(knn_model, 'knn_model_model.joblib')
