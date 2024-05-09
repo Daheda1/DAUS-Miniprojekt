@@ -7,6 +7,35 @@ import cv2 as cv
 import os
 from modeltrain import zoom_tile, remove_circle_from_tile, calculate_color_features
 
+def matrix_create(imgpath):
+    picturematrix = get_tiles(imgpath)
+
+    crownmatrix = []
+    terrainmatrix = []
+
+    for x in range(5):
+        crown_row = []
+        terrain_row = []
+
+        for y in range(5):
+            crown_row.append(crown_detect(picturematrix[x][y], "Templates"))
+            terrain_row.append(get_terrain(picturematrix[x][y]))
+
+        crownmatrix.append(crown_row)
+        terrainmatrix.append(terrain_row)
+
+    return crownmatrix, terrainmatrix, picturematrix
+
+def get_tiles(image):
+    image = cv.imread(image)
+
+    tiles = []
+    for y in range(5):
+        tiles.append([])
+        for x in range(5):
+            tiles[-1].append(image[y*100:(y+1)*100, x*100:(x+1)*100])
+    return tiles
+
 def crown_detect(img_bgr, template_path, threshold = 0.75, iou_thres = 0.2):
     # The points of each found crown. The lenght of the list is the amount of crowns
     boxes = []
@@ -61,13 +90,6 @@ def intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres):
                 cv.rectangle(img_bgr, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
     return boxes
 
-
-def tile_data_get(tile):
-    tile = zoom_tile(tile)
-    tile = remove_circle_from_tile(tile)
-    tile = calculate_color_features(tile)
-    return tile.reshape(1, -1)
-
 def get_terrain(tile):
     model = joblib.load('knn_model_model.joblib')
 
@@ -78,15 +100,11 @@ def get_terrain(tile):
 
     return terrain
 
-def get_tiles(image):
-    image = cv.imread(image)
-
-    tiles = []
-    for y in range(5):
-        tiles.append([])
-        for x in range(5):
-            tiles[-1].append(image[y*100:(y+1)*100, x*100:(x+1)*100])
-    return tiles
+def tile_data_get(tile):
+    tile = zoom_tile(tile)
+    tile = remove_circle_from_tile(tile)
+    tile = calculate_color_features(tile)
+    return tile.reshape(1, -1)
 
 def calculate_score(crownmatrix, terrainmatrix):
     total_score = 0
@@ -118,26 +136,6 @@ def explore_terrain(terrains, crowns, x, y, terrain_type, visited):
         tiles += sub_tiles
     return terrain_count, crown_count, tiles
 
-def matrix_create(imgpath):
-    picturematrix = get_tiles(imgpath)
-
-    crownmatrix = []
-    terrainmatrix = []
-
-    for x in range(5):
-        crown_row = []
-        terrain_row = []
-
-        for y in range(5):
-            crown_row.append(crown_detect(picturematrix[x][y], "Templates"))
-            terrain_row.append(get_terrain(picturematrix[x][y]))
-
-        crownmatrix.append(crown_row)
-        terrainmatrix.append(terrain_row)
-
-    return crownmatrix, terrainmatrix, picturematrix
-
-
 def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     fig, axes = plt.subplots(nrows=5, ncols=5, figsize=(10, 10))
     plt.suptitle(f"Score: {score}", fontsize=16)
@@ -151,14 +149,6 @@ def show_score(crownmatrix, terrainmatrix, picturematrix, score):
             ax.axis('off')
     plt.tight_layout()
     plt.show()
-
-
-#def main():
- #   imgpath = "Data/KD train plader/4.jpg"
-  #  crownmatrix, terrainmatrix, picturematrix = matrix_create(imgpath)
-   # score = calculate_score(crownmatrix, terrainmatrix)
-    #print(score)
-    #show_score(crownmatrix, terrainmatrix, picturematrix, score)
 
 def calculate_dif_score(score, imgpath):
     actual_score = {r"Data/KD Test plader/20.jpg": 52, r"Data/KD Test plader/21.jpg": 40, r"Data/KD Test plader/30.jpg": 48,
@@ -182,6 +172,5 @@ def main():
         dif_score, actual_score = calculate_dif_score(score, imgpath)
         print(f"We predict that the final score is {score}, which is {dif_score} from the actual score of {actual_score}.")
         show_score(crownmatrix, terrainmatrix, picturematrix, score)    
-
 
 main()
