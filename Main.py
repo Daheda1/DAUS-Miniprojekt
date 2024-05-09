@@ -107,6 +107,7 @@ def tile_data_get(tile):
     return tile.reshape(1, -1)
 
 def calculate_score(crownmatrix, terrainmatrix):
+    fullplate = 5
     total_score = 0
     visited = set()
     for y in range(5):
@@ -116,7 +117,14 @@ def calculate_score(crownmatrix, terrainmatrix):
             terrain_type = terrainmatrix[y][x]
             terrain_count, crown_count, _ = explore_terrain(terrainmatrix, crownmatrix, x, y, terrain_type, visited)
             total_score += terrain_count * crown_count
-    return total_score
+
+            if terrain_type == "None":
+                fullplate = 0
+
+    if terrainmatrix[2][2]  == "Home":
+        total_score += 10
+
+    return total_score+fullplate
 
 def explore_terrain(terrains, crowns, x, y, terrain_type, visited):
     if x < 0 or x >= 5 or y < 0 or y >= 5:
@@ -151,8 +159,8 @@ def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     plt.show()
 
 def calculate_dif_score(score, imgpath):
-    actual_score = {"20.jpg": 52, "21.jpg": 40, "30.jpg": 48, "39.jpg": 47, "45.jpg": 38, "46.jpg": 43, "48.jpg": 42,
-                    "49.jpg": 26, "50.jpg": 34, "55.jpg": 37, "63.jpg": 38, "65.jpg": 80, "67.jpg": 99, "70.jpg": 99}
+    actual_score = {"20.jpg": 67, "21.jpg": 55, "30.jpg": 63, "39.jpg": 62, "45.jpg": 43, "46.jpg": 48, "48.jpg": 57,
+                    "49.jpg": 41, "50.jpg": 49, "55.jpg": 52, "63.jpg": 43, "65.jpg": 85, "67.jpg": 104, "70.jpg": 104}
 
     dif_score = abs(actual_score[imgpath] - score)
 
@@ -168,6 +176,6 @@ def main():
         score = calculate_score(crownmatrix, terrainmatrix)
         dif_score, actual_score = calculate_dif_score(score, imgpath)
         print(f"We predict that the final score is {score}, which is {dif_score} from the actual score of {actual_score}.")
-        show_score(crownmatrix, terrainmatrix, picturematrix, score)    
+        #show_score(crownmatrix, terrainmatrix, picturematrix, score)    
 
 main()
