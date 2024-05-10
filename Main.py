@@ -7,6 +7,7 @@ import cv2 as cv
 import os
 from modeltrain import zoom_tile, remove_circle_from_tile, calculate_color_features
 
+#Returnes alle the matrixes, one with alle images, one with terrain types and one with crown count
 def matrix_create(imgpath):
     picturematrix = get_tiles(imgpath)
 
@@ -26,6 +27,7 @@ def matrix_create(imgpath):
 
     return crownmatrix, terrainmatrix, picturematrix
 
+#Splites one picture in to 25 smaller pictures
 def get_tiles(image):
     image = cv.imread(image)
 
@@ -36,10 +38,9 @@ def get_tiles(image):
             tiles[-1].append(image[y*100:(y+1)*100, x*100:(x+1)*100])
     return tiles
 
+#Find the amount of crowns in a picture
 def crown_detect(img_bgr, template_path, threshold = 0.75, iou_thres = 0.2):
-    # The points of each found crown. The lenght of the list is the amount of crowns
     boxes = []
-    assert img_bgr is not None, "file could not be read, check with os.path.exists()"
     for template in os.listdir(template_path):
         actual_temp = os.path.join(r"Templates", template)
         current_template = cv.imread(actual_temp)
@@ -54,6 +55,7 @@ def crown_detect(img_bgr, template_path, threshold = 0.75, iou_thres = 0.2):
             intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres)
     return len(boxes)
 
+#Makes sure any crown is only found once
 def intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres):
     for pts in zip(*loc[::-1]): 
         unions = []
@@ -90,6 +92,7 @@ def intersection_over_union(loc, h, w, boxes, img_bgr, iou_thres):
                 cv.rectangle(img_bgr, pts, (pts[0] + w, pts[1] + h), (0,0,255), 2)
     return boxes
 
+#Predicts the terrain type
 def get_terrain(tile):
     model = joblib.load('knn_model_model.joblib')
 
@@ -100,12 +103,14 @@ def get_terrain(tile):
 
     return terrain
 
+#Modifies tiles before getting data 
 def tile_data_get(tile):
     tile = zoom_tile(tile)
     tile = remove_circle_from_tile(tile)
-    tile = calculate_color_features(tile)
-    return tile.reshape(1, -1)
+    tiledata = calculate_color_features(tile)
+    return tiledata.reshape(1, -1)
 
+#Does final score calculation
 def calculate_score(crownmatrix, terrainmatrix):
     fullplate = 5
     total_score = 0
@@ -126,6 +131,7 @@ def calculate_score(crownmatrix, terrainmatrix):
 
     return total_score+fullplate
 
+#Debth first search for finding all connected terrains
 def explore_terrain(terrains, crowns, x, y, terrain_type, visited):
     if x < 0 or x >= 5 or y < 0 or y >= 5:
         return 0, 0, []
@@ -144,6 +150,7 @@ def explore_terrain(terrains, crowns, x, y, terrain_type, visited):
         tiles += sub_tiles
     return terrain_count, crown_count, tiles
 
+#Shows all tiles with scores
 def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     fig, axes = plt.subplots(nrows=5, ncols=5, figsize=(10, 10))
     plt.suptitle(f"Score: {score}", fontsize=16)
@@ -158,6 +165,7 @@ def show_score(crownmatrix, terrainmatrix, picturematrix, score):
     plt.tight_layout()
     plt.show()
 
+#Calculates diffrence between out systems score and the actual score
 def calculate_dif_score(score, imgpath):
     actual_score = {"20.jpg": 67, "21.jpg": 55, "30.jpg": 63, "39.jpg": 62, "45.jpg": 43, "46.jpg": 48, "48.jpg": 57,
                     "49.jpg": 41, "50.jpg": 49, "55.jpg": 52, "63.jpg": 43, "65.jpg": 85, "67.jpg": 104, "70.jpg": 104}
@@ -166,6 +174,7 @@ def calculate_dif_score(score, imgpath):
 
     return dif_score, actual_score[imgpath]
 
+#The main
 def main():
     imgpaths = r"Data/KD Test plader"
     for imgpath in os.listdir(imgpaths):
@@ -175,7 +184,7 @@ def main():
         crownmatrix, terrainmatrix, picturematrix = matrix_create(relative_imgpath)
         score = calculate_score(crownmatrix, terrainmatrix)
         dif_score, actual_score = calculate_dif_score(score, imgpath)
-        print(f"We predict that the final score is {score}, which is {dif_score} from the actual score of {actual_score}.")
+        print(f"On {imgpath} We predict that the final score is {score}, which is {dif_score} from the actual score of {actual_score}.")
         #show_score(crownmatrix, terrainmatrix, picturematrix, score)    
 
 main()

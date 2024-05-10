@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
 
+#Loads all images from folder and returnes them as dictinary with folder names as keys and lists of picturedata
 def load_images_from_folders(root_folder):
     images_dict = {}
     
@@ -34,7 +35,7 @@ def load_images_from_folders(root_folder):
                 images_dict[folder_name] = images_list
     return images_dict
 
-
+#applies Transforms to all images
 def apply_transformations(images_dict):
     transformed_images_dict = {}
     
@@ -44,12 +45,12 @@ def apply_transformations(images_dict):
         for image in images_list:
             try:
                 # Anvend zoom_tile funktionen
-                zoomed_image = zoom_tile(image)
+                image = zoom_tile(image)
 
                 # Anvend remove_circle_from_tile funktionen
-                final_image = remove_circle_from_tile(zoomed_image)
+                image = remove_circle_from_tile(image)
                 
-                transformed_images.append(final_image)
+                transformed_images.append(image)
             except Exception as e:
                 print(f"En fejl opstod med billedbehandling: {e}")
         
@@ -58,6 +59,7 @@ def apply_transformations(images_dict):
     
     return transformed_images_dict
 
+#zoom a tile by removing the outsite
 def zoom_tile(tile, crop_percentage=5):    
     height, width = tile.shape[:2]
     crop_size = crop_percentage / 100.0
@@ -69,6 +71,7 @@ def zoom_tile(tile, crop_percentage=5):
     zoomed_tile = cv.resize(cropped_tile, (width, height))
     return zoomed_tile
 
+#removes circle from center
 def remove_circle_from_tile(tile, circle_size=0.5):
     height, width = tile.shape[:2]
     center_x, center_y = width // 2, height // 2
@@ -78,14 +81,18 @@ def remove_circle_from_tile(tile, circle_size=0.5):
     circle_removed_tile = cv.bitwise_and(tile, tile, mask=cv.bitwise_not(mask))
     return circle_removed_tile
 
+#Calculate all color features needed for training
 def calculate_color_features(image):
-    average_rgb = np.mean(image, axis=(0, 1))
+    average_bgr = np.average(image, axis=(0, 1))
+    mean_bgr = np.mean(image, axis=(0, 1))
     hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-    average_hsv = np.mean(hsv_image, axis=(0, 1))
-    flat_features = np.concatenate([average_rgb, average_hsv])
+    average_hsv = np.average(hsv_image, axis=(0, 1))
+    mean_hsv = np.mean(hsv_image, axis=(0, 1))
+    flat_features = np.concatenate([average_bgr, mean_bgr, average_hsv, mean_hsv])
 
     return flat_features
 
+#Calculate all color features needed for training for entire dictinary
 def calculate_color_features_dict(images_dict):
     features_dict = {}
     
@@ -102,6 +109,7 @@ def calculate_color_features_dict(images_dict):
     return features_dict
 
 
+#Train knn on data
 def train_knn(features_dict, n_neighbors=3):
     # Saml alle features og labels
     all_features = []
@@ -120,13 +128,14 @@ def train_knn(features_dict, n_neighbors=3):
     X_train, X_test, y_train, y_test = train_test_split(all_features, all_labels, test_size=0.2, random_state=40)
 
     # Initialiser kNN klassifikatoren
-    knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors, metric="euclidean")
 
     # Træn kNN-modellen
     knn.fit(X_train, y_train)
 
     return knn, X_test, y_test
 
+#Test the model
 def test_knn(knn, X_test, y_test):
     # Forudsige testdata
     y_pred = knn.predict(X_test)
@@ -159,7 +168,6 @@ def test_knn(knn, X_test, y_test):
 if __name__ == "__main__":
     root_folder = 'Data/KD train tiles'
     images_dict = load_images_from_folders(root_folder)
-    print(images_dict)
     transformed_dict = apply_transformations(images_dict)
     color_features_dict = calculate_color_features_dict(images_dict)
 
