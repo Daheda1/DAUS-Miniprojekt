@@ -12,25 +12,20 @@ import joblib
 def load_images_from_folders(root_folder):
     images_dict = {}
     
-    # Gennemgå alle mapper i den angivne rodmappe
     for folder_name in os.listdir(root_folder):
         folder_path = os.path.join(root_folder, folder_name)
         
         if os.path.isdir(folder_path):
-            # Liste til at gemme billeder fra den aktuelle mappe
             images_list = []
             
-            # Gennemgå alle filer i mappen
             for filename in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, filename)
                 
-                # Indlæs billedet hvis filen er et billede
                 if file_path.lower().endswith(('.png')):
                     image = cv.imread(file_path)
                     if image is not None:
                         images_list.append(image)
             
-            # Tilføj listen af billeder til ordbogen med mappenavnet som nøgle
             if images_list:
                 images_dict[folder_name] = images_list
     return images_dict
@@ -44,12 +39,8 @@ def apply_transformations(images_dict):
         
         for image in images_list:
             try:
-                # Anvend zoom_tile funktionen
                 image = zoom_tile(image)
-
-                # Anvend remove_circle_from_tile funktionen
                 image = remove_circle_from_tile(image)
-                
                 transformed_images.append(image)
             except Exception as e:
                 print(f"En fejl opstod med billedbehandling: {e}")
@@ -100,7 +91,6 @@ def calculate_color_features_dict(images_dict):
         folder_features = []
         
         for image in images_list:                        
-            # Tilføj den fladede feature-liste til mappens features
             folder_features.append(calculate_color_features(image))
         
         if folder_features:
@@ -111,7 +101,6 @@ def calculate_color_features_dict(images_dict):
 
 #Train knn on data
 def train_knn(features_dict, n_neighbors=3):
-    # Saml alle features og labels
     all_features = []
     all_labels = []
 
@@ -120,27 +109,19 @@ def train_knn(features_dict, n_neighbors=3):
             all_features.append(features)
             all_labels.append(label)
     
-    # Konverter til numpy arrays for kompatibilitet med scikit-learn
     all_features = np.array(all_features)
     all_labels = np.array(all_labels)
 
-    # Opdel data i et trænings- og testsæt
     X_train, X_test, y_train, y_test = train_test_split(all_features, all_labels, test_size=0.2, random_state=40)
-
-    # Initialiser kNN klassifikatoren
     knn = KNeighborsClassifier(n_neighbors=n_neighbors, metric="euclidean")
-
-    # Træn kNN-modellen
     knn.fit(X_train, y_train)
 
     return knn, X_test, y_test
 
 #Test the model
 def test_knn(knn, X_test, y_test):
-    # Forudsige testdata
     y_pred = knn.predict(X_test)
 
-    # Beregn nøjagtighed og andre metrikker
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
@@ -151,10 +132,8 @@ def test_knn(knn, X_test, y_test):
     print(f'Recall: {recall * 100:.2f}%')
     print(f'F1 Score: {f1 * 100:.2f}%')
 
-    # Print classification report
     print(classification_report(y_test, y_pred))
 
-    # Vis forvirringsmatrix
     conf_matrix = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(10,7))
     sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(y_test), yticklabels=np.unique(y_test))
